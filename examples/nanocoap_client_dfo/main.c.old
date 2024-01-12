@@ -1,0 +1,51 @@
+#include "net/gnrc/netif.h"
+#include "net/gnrc/ipv6/nib.h"
+#include "net/gnrc/netif/hdr.h"
+#include "net/gnrc/ipv6.h"
+#include "net/gnrc/netif/raw.h"
+#include "net/gnrc.h"
+#include "net/gnrc/netreg.h"
+#include "net/gnrc/pktbuf.h"
+#include "net/sock/udp.h"
+#include "net/nanocoap_sock.h"
+
+static ssize_t _riot_coap_handler(coap_pkt_t* pdu, uint8_t *buf, size_t len, void *ctx)
+{
+    /* This is where you handle the incoming CoAP request. */
+    /* For this example, we will simply reply with a 2.05 Content response. */
+    (void)ctx;
+    return coap_reply_simple(pdu, COAP_CODE_205, buf, len, COAP_FORMAT_TEXT, (uint8_t*)"Hello, CoAP!", 12);
+}
+
+/* Create the CoAP resource */
+static coap_resource_t _riot_coap_resource = { "/riot/resource", COAP_GET, _riot_coap_handler, NULL };
+
+void setup_coap_resource(void)
+{
+    /* Register the CoAP resource */
+    coap_resource_init();
+    coap_register_resource(&_riot_coap_resource);
+}
+
+void setup_multicast_listener(void)
+{
+    /* Set up the multicast address to listen on */
+    ipv6_addr_t multicast_addr;
+    if (ipv6_addr_from_str(&multicast_addr, "ff02::1") == NULL) {
+        puts("Error: unable to parse multicast address");
+        return;
+    }
+
+    gnrc_netif_t *netif = gnrc_netif_iter(NULL);
+    if (netif == NULL) {
+        puts("Error: no network interface found");
+        return;
+    }
+
+    if (gnrc_netif_ipv6_group_join(netif, &multicast_addr) < 0) {
+        puts("Error: unable to join multicast group");
+        return;
+    }
+
+    puts("Successfully joined multicast group");
+}
