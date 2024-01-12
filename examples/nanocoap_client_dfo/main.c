@@ -58,7 +58,7 @@ void send_coap_multicast_request(void)
     pdu.payload_len = sizeof(buf) - (pdu.payload - buf);
     //pdu.payload_len = 0;
     coap_build_hdr(pdu.hdr, COAP_TYPE_NON, NULL,  0, COAP_METHOD_GET, random_uint32());
-    //coap_pkt_init(&pdu, buf, sizeof(buf), COAP_METHOD_GET);
+    coap_pkt_init(&pdu, buf, sizeof(buf), 4);
     //pdu.hdr->type = COAP_TYPE_NON;
     //pdu.hdr->id = htons(random_uint32());
 
@@ -82,11 +82,14 @@ void send_coap_multicast_request(void)
     /* Create a buffer to hold the response */
     uint8_t rcv[128];
     //sock_udp_t sock;
+    sock_udp_t sock_udp;
+    sock_udp_t *sock = &sock_udp;
 
     // ...
 
     // Use the sock variable in sock_udp_recv
-    res = sock_udp_recv(NULL, rcv, sizeof(rcv), SOCK_NO_TIMEOUT, &remote);
+    
+    res = sock_udp_recv(sock, rcv, sizeof(rcv), SOCK_NO_TIMEOUT, &remote);
     if (res <= 0) {
         if (res == -ETIMEDOUT) {
             puts("CoAP request timed out");
@@ -102,12 +105,16 @@ void send_coap_multicast_request(void)
             if (coap_get_type(&pkt) == COAP_CODE_CONTENT) {
                 /* The response contains content, print it */
                 printf("Received CoAP response: %.*s\n", pkt.payload_len, pkt.payload);
-            } else {
+            } 
+            
+            //else 
+            //{
                 /* The response does not contain content, print the response code */
-                printf("Received CoAP response with code %u\n", coap_get_code(&pkt));
-            }
+            //    printf("Received CoAP response with code %u\n", coap_get_code(&pkt));
+            //}            
         }
     }
+    
 }
 
 int main(void)
